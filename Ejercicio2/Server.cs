@@ -42,8 +42,19 @@ namespace Ejercicio2
                         //El mensaje es null en el Shutdown
                         if (msg != null)
                         {
-                            sw.WriteLine("{0}@{1} : {2}", ieCliente.Address, nombre, msg);
-                            sw.Flush();
+                            if (msg == "#salir")
+                            {
+                                break;
+                            }
+                            else if(msg == "#lista")
+                            {
+
+                            }
+                            else
+                            {
+                                sw.WriteLine("{0}@{1} : {2}", ieCliente.Address, nombre, msg);
+                                sw.Flush();
+                            }
                         }
                     }
                     catch (IOException)

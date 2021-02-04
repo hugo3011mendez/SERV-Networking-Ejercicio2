@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,24 +14,24 @@ namespace Ejercicio2
 {
     class Server
     {
-        static void funcionCliente(object cliente)
+        static List<Cliente> clientes = new List<Cliente>();
+
+        static void funcionCliente(object cl)
         {
+            Cliente cliente = (Cliente)cl;
             string msg; // Creo variable para el mensaje que manda el cliente
-            string nombre;
 
-            Socket sClient = (Socket)cliente;
-            IPEndPoint ieCliente = (IPEndPoint)sClient.RemoteEndPoint;
 
-            using (NetworkStream ns = new NetworkStream(sClient))
+            using (NetworkStream ns = new NetworkStream(cliente.SClient))
             using (StreamReader sr = new StreamReader(ns))
             using (StreamWriter sw = new StreamWriter(ns))
             {
                 sw.WriteLine("Identifiquese!");
                 sw.Flush();
 
-                nombre = sr.ReadLine();
+                cliente.Nombre = sr.ReadLine();
 
-                sw.WriteLine("\n" + nombre + " se ha conectado\n");
+                sw.WriteLine("\n" + cliente.Nombre + " se ha conectado\n");
                 sw.Flush();
 
                 while (true)
@@ -52,7 +53,7 @@ namespace Ejercicio2
                             }
                             else
                             {
-                                sw.WriteLine("{0}@{1} : {2}", ieCliente.Address, nombre, msg);
+                                sw.WriteLine("{0}@{1} : {2}", cliente.IeCliente.Address, cliente.Nombre, msg);
                                 sw.Flush();
                             }
                         }
@@ -64,11 +65,14 @@ namespace Ejercicio2
                     }
                 }
 
-                sw.WriteLine("{0} se ha desconectado", nombre); // Mensaje de despedida
+                sw.WriteLine("{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
                 sw.Flush();
+
             }
 
-            sClient.Close();
+            cliente.SClient.Close();
+
+            clientes.Remove(cliente);
         }
 
 
@@ -76,6 +80,7 @@ namespace Ejercicio2
         {
             IPEndPoint ie = new IPEndPoint(IPAddress.Loopback, 31416); // Creo y defino el IPEndPoint del server
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp); // Creo y defino el socket
+
 
             try
             {
@@ -104,8 +109,11 @@ namespace Ejercicio2
             while (true)
             {
                 Socket sClient = s.Accept(); // Aceptamos la conexión del cliente
+
+                clientes.Add(new Cliente(sClient));
+
                 Thread hiloCliente = new Thread(funcionCliente);
-                hiloCliente.Start(sClient);
+                hiloCliente.Start(clientes[clientes.Count-1]);
             }
         }
     }

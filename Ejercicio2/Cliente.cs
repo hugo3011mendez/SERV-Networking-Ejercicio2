@@ -32,7 +32,7 @@ namespace Ejercicio2
         {
             set
             {
-                IeCliente = (IPEndPoint)SClient.RemoteEndPoint;
+                ieCliente = (IPEndPoint)SClient.RemoteEndPoint;
             }
 
             get
@@ -47,7 +47,7 @@ namespace Ejercicio2
         {
             set
             {
-                Nombre = value.Trim();
+                nombre = value.Trim();
             }
 
             get

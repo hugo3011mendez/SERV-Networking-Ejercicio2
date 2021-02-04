@@ -14,12 +14,15 @@ namespace Ejercicio2
 {
     class Server
     {
-        static List<Cliente> clientes = new List<Cliente>();
+        static List<Cliente> clientes = new List<Cliente>(); // Creo una colección de clientes para ir guardando en ella los clientes que se conectan
 
+
+        // Función que contiene las acciones que realiza el cliente cuando se conecta al servidor
         static void funcionCliente(object cl)
         {
             Cliente cliente = (Cliente)cl;
             string msg; // Creo variable para el mensaje que manda el cliente
+            string nombre;
 
 
             using (NetworkStream ns = new NetworkStream(cliente.SClient))
@@ -31,8 +34,18 @@ namespace Ejercicio2
 
                 cliente.Nombre = sr.ReadLine();
 
-                sw.WriteLine("\n" + cliente.Nombre + " se ha conectado\n");
-                sw.Flush();
+                nombre = cliente.Nombre;
+
+                foreach (Cliente cli in clientes)
+                {
+                    using (NetworkStream ns2 = new NetworkStream(cli.SClient))
+                    using (StreamReader sr2 = new StreamReader(ns2))
+                    using (StreamWriter sw2 = new StreamWriter(ns2))
+                    {
+                        sw2.WriteLine("\n" + nombre + " se ha conectado\n");
+                        sw2.Flush();
+                    }
+                }
 
                 while (true)
                 {
@@ -49,12 +62,34 @@ namespace Ejercicio2
                             }
                             else if(msg == "#lista")
                             {
+                                sw.WriteLine("Lista de usuarios conectados : \n");
 
+                                foreach (Cliente cli in clientes)
+                                {
+                                    if (cli != cliente)
+                                    {
+                                        sw.WriteLine("{0}@{1}", cli.IeCliente.Address, cli.Nombre);
+                                    }
+                                }
+
+                                sw.Flush();
                             }
                             else
                             {
-                                sw.WriteLine("{0}@{1} : {2}", cliente.IeCliente.Address, cliente.Nombre, msg);
-                                sw.Flush();
+
+                                foreach (Cliente cli in clientes)
+                                {
+                                    if (cli != cliente)
+                                    {
+                                        using (NetworkStream ns2 = new NetworkStream(cli.SClient))
+                                        using (StreamReader sr2 = new StreamReader(ns2))
+                                        using (StreamWriter sw2 = new StreamWriter(ns2))
+                                        {
+                                            sw2.WriteLine("{0}@{1} : {2}", cliente.IeCliente.Address, cliente.Nombre, msg);
+                                            sw2.Flush();
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -65,8 +100,19 @@ namespace Ejercicio2
                     }
                 }
 
-                sw.WriteLine("{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
-                sw.Flush();
+                foreach (Cliente cli in clientes)
+                {
+                    if (cli != cliente)
+                    {
+                        using (NetworkStream ns2 = new NetworkStream(cli.SClient))
+                        using (StreamReader sr2 = new StreamReader(ns2))
+                        using (StreamWriter sw2 = new StreamWriter(ns2))
+                        {
+                            sw2.WriteLine("{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
+                            sw2.Flush();
+                        }
+                    }
+                }
 
             }
 
@@ -78,7 +124,7 @@ namespace Ejercicio2
 
         static void Main(string[] args)
         {
-            IPEndPoint ie = new IPEndPoint(IPAddress.Loopback, 31416); // Creo y defino el IPEndPoint del server
+            IPEndPoint ie = new IPEndPoint(IPAddress.Any, 31416); // Creo y defino el IPEndPoint del server
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp); // Creo y defino el socket
 
 
@@ -110,8 +156,10 @@ namespace Ejercicio2
             {
                 Socket sClient = s.Accept(); // Aceptamos la conexión del cliente
 
+                // Después de aceptar la conexión, añadimos a la colección un nuevo cliente pasándole su Socket como parámetro para así inicializarlo
                 clientes.Add(new Cliente(sClient));
 
+                // Uso la funcionCliente para el hiloCliente y lo lanzo pasándole el último cliente añadido a la colección como parámetro
                 Thread hiloCliente = new Thread(funcionCliente);
                 hiloCliente.Start(clientes[clientes.Count-1]);
             }

@@ -15,14 +15,14 @@ namespace Ejercicio2
     class Server
     {
         static List<Cliente> clientes = new List<Cliente>(); // Creo una colección de clientes para ir guardando en ella los clientes que se conectan
-
+        static readonly object l = new object(); // Creo el objeto del lock, porque los hilos están usando recursos iguales
 
         // Función que contiene las acciones que realiza el cliente cuando se conecta al servidor
         static void funcionCliente(object cl)
         {
             Cliente cliente = (Cliente)cl;
             string msg; // Creo variable para el mensaje que manda el cliente
-            string nombre;
+            string nombre = "";
 
 
             using (NetworkStream ns = new NetworkStream(cliente.SClient))
@@ -32,18 +32,21 @@ namespace Ejercicio2
                 sw.WriteLine("Identifiquese!");
                 sw.Flush();
 
-                cliente.Nombre = sr.ReadLine();
+                nombre = sr.ReadLine();
 
-                nombre = cliente.Nombre;
+                cliente.Nombre = nombre;
 
-                foreach (Cliente cli in clientes)
+                lock (l)
                 {
-                    using (NetworkStream ns2 = new NetworkStream(cli.SClient))
-                    using (StreamReader sr2 = new StreamReader(ns2))
-                    using (StreamWriter sw2 = new StreamWriter(ns2))
+                    foreach (Cliente cli in clientes)
                     {
-                        sw2.WriteLine("\n" + nombre + " se ha conectado\n");
-                        sw2.Flush();
+                        using (NetworkStream ns2 = new NetworkStream(cli.SClient))
+                        using (StreamReader sr2 = new StreamReader(ns2))
+                        using (StreamWriter sw2 = new StreamWriter(ns2))
+                        {
+                            sw2.WriteLine("\n" + nombre + " se ha conectado\n");
+                            sw2.Flush();
+                        }
                     }
                 }
 
@@ -100,20 +103,26 @@ namespace Ejercicio2
                     }
                 }
 
-                foreach (Cliente cli in clientes)
+
+                lock (l)
                 {
-                    if (cli != cliente)
+                    foreach (Cliente cli in clientes)
                     {
-                        using (NetworkStream ns2 = new NetworkStream(cli.SClient))
-                        using (StreamReader sr2 = new StreamReader(ns2))
-                        using (StreamWriter sw2 = new StreamWriter(ns2))
+                        if (cli != cliente)
                         {
-                            sw2.WriteLine("{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
-                            sw2.Flush();
+                            if (cli.SClient.Connected)
+                            {
+                                using (NetworkStream ns2 = new NetworkStream(cli.SClient))
+                                using (StreamReader sr2 = new StreamReader(ns2))
+                                using (StreamWriter sw2 = new StreamWriter(ns2))
+                                {
+                                    sw2.WriteLine("{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
+                                    sw2.Flush();
+                                }
+                            }
                         }
                     }
                 }
-
             }
 
             cliente.SClient.Close();

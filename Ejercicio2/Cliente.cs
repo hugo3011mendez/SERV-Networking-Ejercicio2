@@ -47,6 +47,11 @@ namespace Ejercicio2
         {
             set
             {
+                if (value is null)
+                {
+                    value = "";
+                }
+
                 nombre = value.Trim();
             }
 

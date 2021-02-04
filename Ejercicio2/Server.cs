@@ -98,27 +98,24 @@ namespace Ejercicio2
                     }
                     catch (IOException)
                     {
-                        //Salta al acceder al socket y no estar permitido
+                        Console.WriteLine("El cliente " + cliente.IeCliente.Address + " ha cerrado la conexión de forma abrupta");
                         break;
                     }
                 }
 
 
-                lock (l)
+                foreach (Cliente cli in clientes)
                 {
-                    foreach (Cliente cli in clientes)
+                    if (cli != cliente)
                     {
-                        if (cli != cliente)
+                        if (cli.SClient.Connected)
                         {
-                            if (cli.SClient.Connected)
+                            using (NetworkStream ns2 = new NetworkStream(cli.SClient))
+                            using (StreamReader sr2 = new StreamReader(ns2))
+                            using (StreamWriter sw2 = new StreamWriter(ns2))
                             {
-                                using (NetworkStream ns2 = new NetworkStream(cli.SClient))
-                                using (StreamReader sr2 = new StreamReader(ns2))
-                                using (StreamWriter sw2 = new StreamWriter(ns2))
-                                {
-                                    sw2.WriteLine("{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
-                                    sw2.Flush();
-                                }
+                                sw2.WriteLine("\n{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
+                                sw2.Flush();
                             }
                         }
                     }

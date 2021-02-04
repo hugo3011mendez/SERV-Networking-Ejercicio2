@@ -127,7 +127,7 @@ namespace Ejercicio2
             IPEndPoint ie = new IPEndPoint(IPAddress.Any, 31416); // Creo y defino el IPEndPoint del server
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp); // Creo y defino el socket
 
-
+            // Comprobación de puerto ocupado :
             try
             {
                 s.Bind(ie); // Enlazo el socket al IPEndPoint
@@ -150,8 +150,9 @@ namespace Ejercicio2
                 }
             }
 
-            s.Listen(30); // Se queda esperando una conexión y se establece la cola a 30
+            s.Listen(100); // Se queda esperando una conexión y se establece la cola a 100
 
+            // Conexión con los clientes :
             while (true)
             {
                 Socket sClient = s.Accept(); // Aceptamos la conexión del cliente

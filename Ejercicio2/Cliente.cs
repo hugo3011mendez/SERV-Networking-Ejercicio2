@@ -10,10 +10,10 @@ using System.Net.Sockets;
 
 namespace Ejercicio2
 {
-    class Cliente
+    class Cliente // Clase que representa un cliente que se conecte al servidor
     {
-        private Socket sClient;
-        public Socket SClient
+        private Socket sClient; // Atributo que representa el socket del cliente que se conecta al server
+        public Socket SClient // Setter y Getter
         {
             set
             {
@@ -27,8 +27,8 @@ namespace Ejercicio2
         }
 
 
-        private IPEndPoint ieCliente;
-        public IPEndPoint IeCliente
+        private IPEndPoint ieCliente; // IPEndPoint del socket del cliente que se quiere conectar al server
+        public IPEndPoint IeCliente // Setter y Getter
         {
             set
             {
@@ -42,7 +42,7 @@ namespace Ejercicio2
         }
 
 
-        private String nombre;
+        private String nombre; // Cadena que indica el nombre de usuario del cliente que se conecta al server
         public String Nombre
         {
             set
@@ -57,7 +57,7 @@ namespace Ejercicio2
         }
 
 
-        public Cliente(Socket s)
+        public Cliente(Socket s) // Constructor, donde paso como parámetro el socket y le doy valores junto al IPEndPoint
         {
             SClient = s;
             IeCliente = (IPEndPoint)s.RemoteEndPoint;

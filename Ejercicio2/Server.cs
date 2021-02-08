@@ -25,18 +25,19 @@ namespace Ejercicio2
             string nombre; // Creo variable para el nombre de usuario del cliente
             bool salir = false; // Creo variable para indicar si el cliente debe salir del chat o no
 
-
+            // Abro Streams
             using (NetworkStream ns = new NetworkStream(cliente.SClient))
             using (StreamReader sr = new StreamReader(ns))
             using (StreamWriter sw = new StreamWriter(ns))
             {
-                sw.WriteLine("Identifiquese!");
+                sw.WriteLine("Identifiquese!"); // Pido el nombre de usuario al cliente
                 sw.Flush();
 
                 nombre = sr.ReadLine();
 
                 cliente.Nombre = nombre;
 
+                // Lock para recorrer la colección de clientes y mostrar el mensaje de que el actual se ha conectado a los demás
                 lock (l)
                 {
                     foreach (Cliente cli in clientes)
@@ -51,25 +52,26 @@ namespace Ejercicio2
                     }
                 }
 
-                while (salir == false)
+                // Bucle en el que entra el cliente para escribir mensajes :
+                while (!salir)
                 {
                     try
                     {
                         msg = sr.ReadLine(); // Mensaje que escribe el cliente
 
-                        //El mensaje es null en el Shutdown
+                        //El mensaje es null en la salida abrupta
                         if (msg != null)
                         {
-                            switch (msg)
+                            switch (msg) // Switch para comprobar lo que el usuario ha escrito
                             {
-                                case "#salir":
+                                case "#salir": // En el caso del comando salir, se desconecta
                                     salir = true;
                                 break;
 
 
-                                case "#lista":
-                                    sw.WriteLine("Lista de usuarios conectados : \n");
-                                    lock (l)
+                                case "#lista": // En el caso del comando lista, se le muestra una lista de todos los clientes conectados al chat menos él mismo
+                                    sw.WriteLine("Lista de usuarios conectados : ");
+                                    lock (l) // Lock para recorrer la colección de clientes y mostrar los conectados al chat
                                     {
                                         foreach (Cliente cli in clientes)
                                         {
@@ -84,8 +86,8 @@ namespace Ejercicio2
                                 break;
 
 
-                                default:
-                                    lock (l)
+                                default: // En el caso de que no haya introducido ningún comando, se muestra su mensaje en el chat
+                                    lock (l) // Lock para recorrer la colección de clientes y mostarle a todos los demás su mensaje con su identificación delante
                                     {
                                         foreach (Cliente cli in clientes)
                                         {
@@ -104,19 +106,20 @@ namespace Ejercicio2
                                 break;
                             }
                         }
-                        else
+                        else // Cuando sale con el comando salir, llega a esta parte del condicional
                         {
                             salir = true;
                         }
                     }
-                    catch (IOException)
+                    catch (IOException) // Controlo la IOException cuando ocurre una salida abrupta del cliente
                     {
                         Console.WriteLine("El cliente " + cliente.IeCliente.Address + " ha cerrado la conexión de forma abrupta");
-                        salir = true;
+                        salir = true; // Y cuando el cliente sale abruptamente la booleana salir se pone a true para salir del bucle
                     }
                 }
 
 
+                // Lock para recorrer la colección de clientes y mostrarles a todos los demás que este cliente se ha desconectado
                 lock (l)
                 {
                     foreach (Cliente cli in clientes)
@@ -138,9 +141,13 @@ namespace Ejercicio2
                 }
             }
 
-            cliente.SClient.Close();
 
-            clientes.Remove(cliente);
+            lock (l) // Lock para cerrar el socket del cliente y eliminarlo de la colección de clientes
+            {
+                cliente.SClient.Close();
+
+                clientes.Remove(cliente);
+            }
         }
 
 
@@ -179,8 +186,11 @@ namespace Ejercicio2
             {
                 Socket sClient = s.Accept(); // Aceptamos la conexión del cliente
 
-                // Después de aceptar la conexión, añadimos a la colección un nuevo cliente pasándole su Socket como parámetro para así inicializarlo
-                clientes.Add(new Cliente(sClient));
+                lock (l) // Lock para añadir al cliente en la colección de clientes conectados al chat
+                {
+                    // Después de aceptar la conexión, añadimos a la colección un nuevo cliente pasándole su Socket como parámetro para así inicializarlo
+                    clientes.Add(new Cliente(sClient));
+                }
 
                 // Uso la funcionCliente para el hiloCliente y lo lanzo pasándole el último cliente añadido a la colección como parámetro
                 Thread hiloCliente = new Thread(funcionCliente);

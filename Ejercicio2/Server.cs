@@ -22,7 +22,8 @@ namespace Ejercicio2
         {
             Cliente cliente = (Cliente)cl;
             string msg; // Creo variable para el mensaje que manda el cliente
-            string nombre = "";
+            string nombre; // Creo variable para el nombre de usuario del cliente
+            bool salir = false; // Creo variable para indicar si el cliente debe salir del chat o no
 
 
             using (NetworkStream ns = new NetworkStream(cliente.SClient))
@@ -44,13 +45,13 @@ namespace Ejercicio2
                         using (StreamReader sr2 = new StreamReader(ns2))
                         using (StreamWriter sw2 = new StreamWriter(ns2))
                         {
-                            sw2.WriteLine("\n" + nombre + " se ha conectado\n");
+                            sw2.WriteLine(nombre + " se ha conectado\n");
                             sw2.Flush();
                         }
                     }
                 }
 
-                while (true)
+                while (salir == false)
                 {
                     try
                     {
@@ -59,63 +60,78 @@ namespace Ejercicio2
                         //El mensaje es null en el Shutdown
                         if (msg != null)
                         {
-                            if (msg == "#salir")
+                            switch (msg)
                             {
+                                case "#salir":
+                                    salir = true;
                                 break;
-                            }
-                            else if(msg == "#lista")
-                            {
-                                sw.WriteLine("Lista de usuarios conectados : \n");
 
-                                foreach (Cliente cli in clientes)
-                                {
-                                    if (cli != cliente)
+
+                                case "#lista":
+                                    sw.WriteLine("Lista de usuarios conectados : \n");
+                                    lock (l)
                                     {
-                                        sw.WriteLine("{0}@{1}", cli.IeCliente.Address, cli.Nombre);
-                                    }
-                                }
-
-                                sw.Flush();
-                            }
-                            else
-                            {
-
-                                foreach (Cliente cli in clientes)
-                                {
-                                    if (cli != cliente)
-                                    {
-                                        using (NetworkStream ns2 = new NetworkStream(cli.SClient))
-                                        using (StreamReader sr2 = new StreamReader(ns2))
-                                        using (StreamWriter sw2 = new StreamWriter(ns2))
+                                        foreach (Cliente cli in clientes)
                                         {
-                                            sw2.WriteLine("{0}@{1} : {2}", cliente.IeCliente.Address, cliente.Nombre, msg);
-                                            sw2.Flush();
+                                            if (cli != cliente)
+                                            {
+                                                sw.WriteLine("{0}@{1}", cli.IeCliente.Address, cli.Nombre);
+                                            }
                                         }
                                     }
-                                }
+
+                                    sw.Flush();
+                                break;
+
+
+                                default:
+                                    lock (l)
+                                    {
+                                        foreach (Cliente cli in clientes)
+                                        {
+                                            if (cli != cliente)
+                                            {
+                                                using (NetworkStream ns2 = new NetworkStream(cli.SClient))
+                                                using (StreamReader sr2 = new StreamReader(ns2))
+                                                using (StreamWriter sw2 = new StreamWriter(ns2))
+                                                {
+                                                    sw2.WriteLine("{0}@{1} : {2}", cliente.IeCliente.Address, cliente.Nombre, msg);
+                                                    sw2.Flush();
+                                                }
+                                            }
+                                        }
+                                    }
+                                break;
                             }
+                        }
+                        else
+                        {
+                            salir = true;
                         }
                     }
                     catch (IOException)
                     {
                         Console.WriteLine("El cliente " + cliente.IeCliente.Address + " ha cerrado la conexión de forma abrupta");
-                        break;
+                        salir = true;
                     }
                 }
 
 
-                foreach (Cliente cli in clientes)
+                lock (l)
                 {
-                    if (cli != cliente)
+                    foreach (Cliente cli in clientes)
                     {
-                        if (cli.SClient.Connected)
+                        if (cli != cliente)
                         {
-                            using (NetworkStream ns2 = new NetworkStream(cli.SClient))
-                            using (StreamReader sr2 = new StreamReader(ns2))
-                            using (StreamWriter sw2 = new StreamWriter(ns2))
+                            if (cli.SClient.Connected)
                             {
-                                sw2.WriteLine("\n{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
-                                sw2.Flush();
+                                using (NetworkStream ns2 = new NetworkStream(cli.SClient))
+                                using (StreamReader sr2 = new StreamReader(ns2))
+                                using (StreamWriter sw2 = new StreamWriter(ns2))
+                                {
+                                    sw2.WriteLine("\n{0} se ha desconectado", cliente.Nombre); // Mensaje de despedida
+                                    sw2.Flush();
+                                }
                             }
                         }
                     }
